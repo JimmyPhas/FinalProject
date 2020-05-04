@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">FinalProject</string>
+    <string name="title_playing">Playing</string>
+    <string name="title_songs">Songs</string>
+    <string name="title_playlists">Playlists</string>
+    <string name="title_feed">Feed</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_Songs" />
+    <string name="title_Playlists" />
+    <string name="title_Feed" />
+    <string name="title_Playing" />
+</resources>
