@@ -17,14 +17,16 @@ import com.google.android.material.internal.ContextUtils.getActivity
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.fragment_playing.view.*
 import kotlinx.android.synthetic.main.row_song.view.*
+import java.lang.Exception
 
 
-class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?) : RecyclerView.Adapter<SongRecyclerAdapter.MyViewHolder>() {
+class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?, context: Context) : RecyclerView.Adapter<SongRecyclerAdapter.MyViewHolder>() {
 
     var count = 0
     private val Media_Player = "MediaPlayer"
     private val TAG = "MyRecyclerAdapter"
     private val bundle = Bundle()
+    internal var dbHelper = SongDBHelper(context)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
 
@@ -66,6 +68,33 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
         init {
             itemView.setOnClickListener {
                 val selectedItem = adapterPosition
+                val lastSession = mutableListOf<LastSession>()
+                try {
+                    val cursor1 = dbHelper.viewLastSession
+                    if (cursor1 != null) {
+                        while (cursor1.moveToNext()) {
+                            lastSession.add(
+                                LastSession(
+                                    cursor1.getInt(1),
+                                    cursor1.getInt(2),
+                                    cursor1.getString(3),
+                                    cursor1.getInt(4),
+                                    cursor1.getInt(5),
+                                    cursor1.getInt(6)
+                                )
+                            )
+                        }
+                    }
+
+                    val cursor2 = dbHelper.updateLast("1", selectedItem, 0, "ALLDBSONGS", 1, lastSession[0].loop, lastSession[0].shuffle)
+                    if (cursor2 == true) {
+                        Log.d("SONGRECYCLER", "Successful update")
+                    }
+                } catch (e: Exception){
+                    Log.e("SONGRECYCLER", "error: $e")
+                }
+
+
 
                 val sharedPreferences = activity!!.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
                 val editor = sharedPreferences?.edit()

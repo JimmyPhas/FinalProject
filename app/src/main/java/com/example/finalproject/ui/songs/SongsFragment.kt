@@ -9,6 +9,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,22 +20,24 @@ import androidx.core.content.PermissionChecker.checkSelfPermission
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.finalproject.Playlist
-import com.example.finalproject.R
-import com.example.finalproject.Song
-import com.example.finalproject.SongRecyclerAdapter
+import com.example.finalproject.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.fragment_songs.*
+import java.lang.Exception
+import androidx.appcompat.app.AlertDialog
 
 
 class SongsFragment : Fragment() {
 
     private val Media_Player = "MediaPlayer"
-    private val allsongs = mutableListOf<Song>()
+    private val mySongs = mutableListOf<Song>()
+    private val mySongsID = mutableListOf<Int>()
     private val songList = mutableListOf<String>()
     private val PERMISSION = 1
     private val bundle = Bundle()
+    internal var dbHelper = this.context?.let { SongDBHelper(it) }
+
 
     private lateinit var songsViewModel: SongsViewModel
 
@@ -58,59 +61,67 @@ class SongsFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        // makes songs from the files in the raw folder
-        // had trouble trying to read from sd card so i went with this
-        val mySongs = mutableListOf<Song>()
-        val mySongsID = mutableListOf<Int>()
-        mySongs.add(Song("Angel", "Big Bad Bosses", "3:40", 0))
-        mySongsID.add(R.raw.big_bad_bosses_angel)
-        mySongs.add(Song("Egg Man", "Big Bad Bosses", "3:25", 0))
-        mySongsID.add(R.raw.big_bad_bosses_egg_man)
-        mySongs.add(Song("I'm the Boss", "Big Bad Bosses", "4:23", 0))
-        mySongsID.add(R.raw.big_bad_bosses_im_the_boss)
-        mySongs.add(Song("Princess", "Big Bad Bosses", "3:57", 0))
-        mySongsID.add(R.raw.big_bad_bosses_princess)
-        mySongs.add(Song("Brand New Day", "Dr. Horrible Sing Along Blog", "1:49", 0))
-        mySongsID.add(R.raw.brand_new_day)
-        mySongs.add(Song("My Eyes", "Dr. Horrible Sing Along Blog", "2:47", 0))
-        mySongsID.add(R.raw.my_eyes)
-        mySongs.add(Song("My Freeze Ray", "Dr. Horrible Sing Along Blog", "1:54", 0))
-        mySongsID.add(R.raw.my_freeze_ray)
-        mySongs.add(Song("Acid Dreams", "MAX", "3:17", 0))
-        mySongsID.add(R.raw.max_acid_dreams)
-        mySongs.add(Song("Basement Party", "MAX", "3:22", 0))
-        mySongsID.add(R.raw.max_basement_party)
-        mySongs.add(Song("Worship", "MAX", "3:06", 0))
-        mySongsID.add(R.raw.max_worship)
-        mySongs.add(Song("Duke Nukem", "Story Break", "1:12:24", 0))
-        mySongsID.add(R.raw.sb41_dukenukem)
-        mySongs.add(Song("Carmen Sandiego", "Story Break", "1:26:37", 0))
-        mySongsID.add(R.raw.story_break_carmen_sandiego)
-        mySongs.add(Song("Guess Who", "Story Break", "1:02:04", 0))
-        mySongsID.add(R.raw.story_break_guess_who)
+        try {
+            val cursor = dbHelper?.viewAllSongs
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    mySongs.add(
+                        Song(
+                            cursor.getString(1),
+                            cursor.getString(2),
+                            cursor.getString(3),
+                            cursor.getInt(4)
+                        )
+                    )
+                }
+            }
+            else {
+                // makes songs from the files in the raw folder
+                // had trouble trying to read from sd card so i went with this
+                mySongs.add(Song("Angel", "Big Bad Bosses", "3:40", R.raw.big_bad_bosses_angel))
+                mySongs.add(Song("Egg Man", "Big Bad Bosses", "3:25", R.raw.big_bad_bosses_egg_man))
+                mySongs.add(Song("I'm the Boss", "Big Bad Bosses", "4:23", R.raw.big_bad_bosses_im_the_boss))
+                mySongs.add(Song("Princess", "Big Bad Bosses", "3:57", R.raw.big_bad_bosses_princess))
+                mySongs.add(Song("Brand New Day", "Dr. Horrible Sing Along Blog", "1:49", R.raw.brand_new_day))
+                mySongs.add(Song("My Eyes", "Dr. Horrible Sing Along Blog", "2:47", R.raw.my_eyes))
+                mySongs.add(Song("My Freeze Ray", "Dr. Horrible Sing Along Blog", "1:54", R.raw.my_freeze_ray))
+                mySongs.add(Song("Acid Dreams", "MAX", "3:17", R.raw.max_acid_dreams))
+                mySongs.add(Song("Basement Party", "MAX", "3:22", R.raw.max_basement_party))
+                mySongs.add(Song("Worship", "MAX", "3:06", R.raw.max_worship))
+                mySongs.add(Song("Duke Nukem", "Story Break", "1:12:24", R.raw.sb41_dukenukem))
+                mySongs.add(Song("Carmen Sandiego", "Story Break", "1:26:37", R.raw.story_break_carmen_sandiego))
+                mySongs.add(Song("Guess Who", "Story Break", "1:02:04", R.raw.story_break_guess_who))
 
+                for (S in mySongs) {
+                    try {
+                        dbHelper?.insertSong(S)
+                    } catch (e:Exception) {
+                        Log.e("SONGFRAGMENT", "error $e")
+                    }
+                }
+
+            }
+        } catch (e: Exception){
+            Log.e("SONGFRAGMENT", "error: $e")
+        }
 
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val gson = Gson()
         val editor = sharedPreferences?.edit()
 
         val saveAllSongs = gson.toJson(mySongs)
-        val saveAllSongsID = gson.toJson(mySongsID)
         if (editor != null) {
             editor.putString("AllSongs", saveAllSongs)
         }
         if (editor != null) {
-            editor.putString("AllSongsID", saveAllSongsID)
+            editor.putString("LastPlaylist", saveAllSongs)
         }
-        if (editor != null) {
-            editor.putString("LastPlaylist", saveAllSongsID)
-        }
-
         if (editor != null) {
             editor.apply()
         }
 
-        recycler_songs.adapter = SongRecyclerAdapter(mySongs as ArrayList<Song>, this.activity)
+        recycler_songs.adapter =
+            this.context?.let { SongRecyclerAdapter(mySongs as ArrayList<Song>, this.activity, it) }
         recycler_songs.layoutManager = LinearLayoutManager(this.context)
     }
 
