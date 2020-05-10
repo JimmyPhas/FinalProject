@@ -42,7 +42,6 @@ class PlayingFragment : Fragment() {
 
 
     private lateinit var playingViewModel: PlayingViewModel
-    lateinit var db :MusicRoomDatabse
 
 
 //    @SuppressLint("UseRequireInsteadOfGet")
@@ -58,129 +57,22 @@ class PlayingFragment : Fragment() {
         // remembers lest values of last session
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val editor = sharedPreferences?.edit()
-        val currentPlaylist = sharedPreferences?.getString("LastPlaylist", "")?:""
-        val currentSong = sharedPreferences?.getString("LastSong", "")?:""
-        val currentTime = sharedPreferences?.getString("LastTime", "")?:""
-        val loop = sharedPreferences?.getString("Loop", "")?:""
-        val shuffle = sharedPreferences?.getString("Shuffle", "")?:""
         val gson = Gson()
 
-        val myIntent = Intent(getActivity(), MyService::class.java)
-        db = context?.applicationContext?.let { Room.databaseBuilder(it, MusicRoomDatabse::class.java, "music.db").build() }!!
-
-
-        Thread {
-            val SONGS = db.musicDAO().viewAllSongs()
-            Log.d("JEWWWWWWWWSSSSSSSSSS", "is it even goin iun this?")
-            for (S in SONGS) {
-                Log.d("WORRRRRRKKKKK", "stuff: ${S}")
-                lastPlaylist.add((Song(S.songName, S.artistName, S.totalLength, S.uriID)))
-
-            }
-            Log.d("FUCKKKKKKKKKK", "stuff: ${lastPlaylist}")
-        }.start()
-
-
-
-
-
-//        if (currentPlaylist.isNotEmpty()) {
-//            val sType = object : TypeToken<List<Song>>() {}.type
-//            val savedPlaylist = gson.fromJson<List<Song>>(currentPlaylist, sType)
-//
-//            for (S in savedPlaylist) {
-//                lastPlaylist.add(S)
-//            }
-//
-//        }
-
-        // sets the settings and last session values
-        if (loop.isNotEmpty()) {
-            val sType = object : TypeToken<Boolean>() {}.type
-            val saveLoop = gson.fromJson<Boolean>(loop, sType)
-
-            loopstate = saveLoop
-            if (loopstate == true) {
-                root.repeatbutton.setImageResource(R.drawable.ic_repeat_black_24dp)
-            }
-            else {
-                root.repeatbutton.setImageResource(R.drawable.ic_repeat_one_black_24dp)
-            }
-        }
-
-        if (shuffle.isNotEmpty()) {
-            val sType = object : TypeToken<Boolean>() {}.type
-            val saveShuffle = gson.fromJson<Boolean>(shuffle, sType)
-
-            shufflestate = saveShuffle
-            if (shufflestate == true) {
-                root.shufflebutton.setImageResource(R.drawable.ic_shuffle_black_24dp)
-            }
-            else {
-                root.shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
-            }
-        }
-
-        if (lastPlaylist.isNotEmpty()) {
-            if (currentSong.isNotEmpty()) {
-                val sType = object : TypeToken<Int>() {}.type
-                trackIndex = gson.fromJson(currentSong, sType)
-                nowPlaying = lastPlaylist[trackIndex].uriValue
-                myIntent.putExtra("song", nowPlaying)
-            }
-            else {
-                nowPlaying = lastPlaylist[trackIndex].uriValue
-                myIntent.putExtra("song", nowPlaying)
-            }
-            myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            root.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-        }
-        else {
-            trackIndex = 10
-            nowPlaying = lastPlaylist[trackIndex].uriValue
-            myIntent.putExtra("song", nowPlaying)
-            myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            root.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-        }
+        getSharedPrefs(root)
 
         // listener of the play button
         root.playbutton.setOnClickListener {
             // checks if we are currently playing a song
             if (playstate == false) {
-                // gets the timestamp of the last time this song was played
-                if (currentTime.isNotEmpty()) {
-                    val sType = object : TypeToken<Int>() {}.type
-                    val lastTime = gson.fromJson<Int>(currentTime, sType)
-                    myMediaPlayer?.seekTo(lastTime*1000)
-                }
-
                 // sets the UI values
                 playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
-                // used to update the seekbar
-                track = true
-//                startService(myIntent) todo(skdbgvskjbngolajgnvaljgbnvlsajbvnojlsadbvjsdbvnskdjvbskjbvskjbskjdvbsodvbnobnsvb)
-//                getActivity()?.startService(myIntent)
-                myMediaPlayer?.start()
-                // sets the seekbar
-                totalTime = myMediaPlayer?.duration ?: 0
-                view?.totalTime?.text  = createTimeLabel(totalTime)
-                view?.playbar?.max = totalTime/1000
-                view?.playbar?.progress = 0
-                playstate = true
-                view?.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-            } else {
-                // if playing a song pause it
+                playMusic()
+
+            }
+            else {
+                // if playing a song, pause it
                 playbutton.setImageResource(R.drawable.ic_play_arrow_black_24dp)
-                val pos = myMediaPlayer!!.getCurrentPosition()/1000
-                // saves the current timestamp
-                if (editor != null) {
-                    editor.putString("LastTime", pos.toString())
-                }
-                if (editor != null) {
-                    editor.apply()
-                }
-//                 todo(iaubgsjbgljsnglsknvbslknbvslkbnvsldkvnslkbnvslkbnsljbnsllnkjsdvlnksfbvklnjsfbkln)
-//                getActivity()?.stopService(myIntent)
                 myMediaPlayer?.pause()
                 // tells program to stop updating seekbar
                 track = false
@@ -188,18 +80,23 @@ class PlayingFragment : Fragment() {
             }
         }
 
-
         // updates the seek bar every second
         this.activity?.runOnUiThread(object : Runnable {
             override fun run() {
+                // if track is true update the seekbar otherwise dont (this is important or else app crashes when changing off of the fragment)
                 if (track == true) {
                     // if end of song go to next one or stop playing automatically
                     if ((myMediaPlayer!!.getCurrentPosition()/ 1000) == (totalTime / 1000)) {
+                        // checks loopstate if false stop playing and reset ui
                         if (loopstate == false) {
                             playbutton.setImageResource(R.drawable.ic_play_arrow_black_24dp)
                             playstate = false
+                            track = false
+                            myMediaPlayer!!.release()
+                            playbar.setProgress(0)
                         }
                         else {
+                            // if loop true play next song
                             playNextSong()
                         }
                     }
@@ -208,22 +105,17 @@ class PlayingFragment : Fragment() {
                     view?.playTime?.text = createTimeLabel(mCurrentPosition * 1000)
                 }
 
+                // waits a second
                 myHandler.postDelayed(this, 1000)
             }
         })
 
-        // listens for user change on the seek bar and changes the timestamp of song to where the user clicked
+        // listens for user change on the seek bar and changes the mediaplayer to where the user clicked
         root.playbar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     myMediaPlayer?.seekTo(progress * 1000)
                     val pos = myMediaPlayer!!.getCurrentPosition()/1000
-                    if (editor != null) {
-                        editor.putString("LastTime", pos.toString())
-                    }
-                    if (editor != null) {
-                        editor.apply()
-                    }
                 }
             }
 
@@ -243,73 +135,44 @@ class PlayingFragment : Fragment() {
                 myMediaPlayer?.release()
                 trackIndex = (trackIndex + 1) % lastPlaylist.size
                 nowPlaying = lastPlaylist[trackIndex].uriValue
-                myIntent.putExtra("song", nowPlaying)
-                // todo(akjnfojsnglsjngvlsnbvlsknbvslkbnvlsnbolwsjbolwsbnpoilswnb opilwsnbvowsbnbvrolbwosb)
                 myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-                myMediaPlayer?.start()
-                getActivity()?.startService(myIntent)
             }
             // if shuffle on select a random song in the array
             else {
                 myMediaPlayer?.release()
                 trackIndex = (0 until lastPlaylist.size).random()
                 nowPlaying = lastPlaylist[trackIndex].uriValue
-                myIntent.putExtra("song", nowPlaying)
-                // todo(akjdbgvihedbfvliasubeilvb ilaeywfbviyab sdlfiv bialdufb viuab)
                 myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-                myMediaPlayer?.start()
-                getActivity()?.startService(myIntent)
             }
-            // changes the UI according to the song playing
-            track = true
-            totalTime = myMediaPlayer?.duration ?: 0
-            view?.totalTime?.text  = createTimeLabel(totalTime)
-            view?.playbar?.max = totalTime/1000
-            view?.playbar?.progress = 0
-            view?.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-            playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
-            playstate = true
+            playMusic()
         }
 
         // plays the previous song using the stack, if nothing in the stack plays a random song or previous song in array
         root.prevbutton.setOnClickListener {
+            // if stack is empty
             if (stackCurser == 0) {
+                // if shuffle is off play the index of song before the current song in the playlist
                 if (shufflestate == false) {
                     myMediaPlayer?.release()
                     trackIndex = (trackIndex - 1) % lastPlaylist.size
                     nowPlaying = lastPlaylist[trackIndex].uriValue
-                    myIntent.putExtra("song", nowPlaying)
-                    // todo(xdectfvygbuhjiftvyugbhjknrgvgyubhjfbdvubjknfxdbvubjkhnfdxbrvguibjknfbdvbjknfbdxvbjnkfbdxvsbjknfbdjkn bdfxknjl )
                     myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-                    myMediaPlayer?.start()
-                    getActivity()?.startService(myIntent)
                 } else {
+                    // if shuffle on play random song
                     myMediaPlayer?.release()
                     trackIndex = (0 until lastPlaylist.size).random()
                     nowPlaying = lastPlaylist[trackIndex].uriValue
-                    myIntent.putExtra("song", nowPlaying)
-                    // todo(hsfdvb ikwsrbgowbsrngo ubfoubv dkfjb ijdbfgoudbfrug jvbbsdreoubg oudnrfbodnfbdjfbour fbgoswerngobrs)
                     myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-                    myMediaPlayer?.start()
-                    getActivity()?.startService(myIntent)
                 }
             }
             else {
+                // if stack is not empty pop the previous song played
                 myMediaPlayer?.release()
                 songStack("pop", trackIndex)
                 nowPlaying = lastPlaylist[trackIndex].uriValue
-                myIntent.putExtra("song", nowPlaying)
-                // todo(ikjhbvisdhbfvi usbf viuosbrvu bsfiuvb usobv isjb isbvius bg oquaeb goabgvo)
                 myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-                myMediaPlayer?.start()
-                getActivity()?.startService(myIntent)
             }
-            totalTime = myMediaPlayer?.duration ?: 0
-            view?.totalTime?.text  = createTimeLabel(totalTime)
-            view?.playbar?.max = totalTime/1000
-            view?.playbar?.progress = 0
-            view?.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-            playstate = true
+            playMusic()
         }
 
         // toggles if user wants to repeat the playlist or just play one song and stop
@@ -318,23 +181,11 @@ class PlayingFragment : Fragment() {
                 loopstate = true
                 myMediaPlayer?.isLooping = true
                 repeatbutton.setImageResource(R.drawable.ic_repeat_black_24dp)
-                if (editor != null) {
-                    editor.putString("Loop", "true")
-                }
-                if (editor != null) {
-                    editor.apply()
-                }
             }
             else {
                 loopstate = false
                 myMediaPlayer?.isLooping = false
                 repeatbutton.setImageResource(R.drawable.ic_repeat_one_black_24dp)
-                if (editor != null) {
-                    editor.putString("Loop", "false")
-                }
-                if (editor != null) {
-                    editor.apply()
-                }
             }
         }
 
@@ -343,61 +194,35 @@ class PlayingFragment : Fragment() {
             if (shufflestate == false) {
                 shufflestate = true
                 shufflebutton.setImageResource(R.drawable.ic_shuffle_black_24dp)
-                if (editor != null) {
-                    editor.putString("Shuffle", "true")
-                }
-                if (editor != null) {
-                    editor.apply()
-                }
             }
             else {
                 shufflestate = false
                 shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
-                if (editor != null) {
-                    editor.putString("Shuffle", "false")
-                }
-                if (editor != null) {
-                    editor.apply()
-                }
             }
         }
-
 
         return root
     }
 
     // when the song is over automatically play the next song
     fun playNextSong() {
-        val myIntent = Intent(getActivity(), MyService::class.java)
+        // push current song to stack
         songStack("push", trackIndex)
+        // checks shuffle if false play song in playlist in order
         if (shufflestate == false) {
             myMediaPlayer?.release()
             trackIndex = (trackIndex + 1) % lastPlaylist.size
             nowPlaying = lastPlaylist[trackIndex].uriValue
-            myIntent.putExtra("song", nowPlaying)
-            // todo(hubvisb vio sbvoubsouvbsoubvousbvousbvousbvo usb vobsvob)
             myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            myMediaPlayer?.start()
-//            getActivity()?.startService(myIntent)
         }
         else {
+            // if true play random song in playlist
             myMediaPlayer?.release()
             trackIndex = (0 until lastPlaylist.size).random()
             nowPlaying = lastPlaylist[trackIndex].uriValue
-            myIntent.putExtra("song", nowPlaying)
-            // todo(hsbdv oisbdouv hbougb ouboueqbf ouqabfeouq abegovbqeigbeidkvgbswaoubvoaubvgouawbvobofbvg)
             myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            myMediaPlayer?.start()
-//            getActivity()?.startService(myIntent)
         }
-        track = true
-        totalTime = myMediaPlayer?.duration ?: 0
-        view?.totalTime?.text  = createTimeLabel(totalTime)
-        view?.playbar?.max = totalTime/1000
-        view?.playbar?.progress = 0
-        view?.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
-        playstate = true
-
+        playMusic()
     }
 
     // used when user clicks a song from the song fragment
@@ -407,9 +232,8 @@ class PlayingFragment : Fragment() {
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val editor = sharedPreferences?.edit()
         val gson = Gson()
-        val myIntent = Intent(getActivity(), MyService::class.java)
 
-        // if the user click on an item from the song fragment retrieve the value
+        // if the user click on an item from the song fragment retrieve the index and play
         val fromSong = sharedPreferences?.getString("SongClick", "")?:""
         if (fromSong.isNotEmpty()) {
             val sType = object : TypeToken<String>() {}.type
@@ -417,15 +241,7 @@ class PlayingFragment : Fragment() {
             // plays song automatically when fragment switches from song to playing
             if (fromsong == "true") {
                 playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
-                // todo(hbfviub eougb owsurbg ousbousbn  vousbvoabeg oubsdkjvbsou bvb osjnv os)
-//                getActivity()?.startService(myIntent)
-                myMediaPlayer?.start()
-                totalTime = myMediaPlayer?.duration ?: 0
-                view?.totalTime?.text  = createTimeLabel(totalTime)
-                view?.playbar?.max = totalTime/1000
-                view?.playbar?.progress = 0
-                playstate = true
-                track = true
+                playMusic()
                 if (editor != null) {
                     editor.putString("SongClick", "false")
                 }
@@ -473,6 +289,12 @@ class PlayingFragment : Fragment() {
             val editor = sharedPreferences?.edit()
 
             if (editor != null) {
+                editor.putString("Shuffle", shufflestate.toString())
+            }
+            if (editor != null) {
+                editor.putString("Loop", loopstate.toString())
+            }
+            if (editor != null) {
                 editor.putString("LastSong", trackIndex.toString())
             }
             if ((editor != null) && playstate == true) {
@@ -488,7 +310,7 @@ class PlayingFragment : Fragment() {
 
             playbutton.setImageResource(R.drawable.ic_play_arrow_black_24dp)
             playstate = false
-//            getActivity()?.stopService(myIntent)
+//            startBackgroundService()
             myMediaPlayer?.release()
         }
     }
@@ -505,6 +327,7 @@ class PlayingFragment : Fragment() {
         var sec = time / 1000 % 60
         var hr = time / 1000 / 60 / 60
 
+        // if it is over an hour
         if (min >59) {
             hr = min / 60
             min = min % 60
@@ -527,6 +350,7 @@ class PlayingFragment : Fragment() {
                 timeLabel += sec
             }
         }
+        // if it is less than an hour
         else {
             timeLabel = "$min:"
             if (sec < 10) {
@@ -539,6 +363,125 @@ class PlayingFragment : Fragment() {
         }
 
         return timeLabel
+    }
+
+//    fun startBackgroundService() {
+//        val myIntent = Intent(getActivity(), MyService::class.java)
+//        startService(myIntent)
+//        getActivity()?.startService(myIntent)
+//        myIntent.putExtra("song", nowPlaying)
+//
+//    }
+
+    fun getSharedPrefs(ROOT: View) {
+        // uses shared preferences to keep track of previous app settings
+        val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
+        val gson = Gson()
+
+        val currentPlaylist = sharedPreferences?.getString("LastPlaylist", "")?:""
+        val allSongs = sharedPreferences?.getString("AllSongs", "")?:""
+        val loop = sharedPreferences?.getString("Loop", "")?:""
+        val shuffle = sharedPreferences?.getString("Shuffle", "")?:""
+        val currentSong = sharedPreferences?.getString("LastSong", "")?:""
+        val currentTime = sharedPreferences?.getString("LastTime", "")?:""
+
+        // gets the last playlist that was played in the app
+        if (currentPlaylist.isNotEmpty()) {
+            val sType = object : TypeToken<List<Song>>() {}.type
+            val savedPlaylist = gson.fromJson<List<Song>>(currentPlaylist, sType)
+
+            for (S in savedPlaylist) {
+                lastPlaylist.add(S)
+            }
+
+        }
+
+        // if last playlist is empty play all songs in app
+        if (lastPlaylist.isNotEmpty()) {
+            // if last playlist not empty get the last song played
+            if (currentSong.isNotEmpty()) {
+                val sType = object : TypeToken<Int>() {}.type
+                // gets the index of the song in the playlist
+                trackIndex = gson.fromJson(currentSong, sType)
+                // sets the uri value to now playing
+                nowPlaying = lastPlaylist[trackIndex].uriValue
+            }
+            else {
+                nowPlaying = lastPlaylist[trackIndex].uriValue
+            }
+            // sets the mediaplayer to the song
+            myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
+            ROOT.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
+        }
+        else {
+            val sType = object : TypeToken<List<Song>>() {}.type
+            val savedPlaylist = gson.fromJson<List<Song>>(allSongs, sType)
+
+            for (S in savedPlaylist) {
+                lastPlaylist.add(S)
+            }
+
+            trackIndex = 0
+            nowPlaying = lastPlaylist[trackIndex].uriValue
+            myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
+            ROOT.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
+        }
+
+        // gets the time that the last play session stopped
+        if (currentTime.isNotEmpty()) {
+            val sType = object : TypeToken<Int>() {}.type
+            val lastTime = gson.fromJson<Int>(currentTime, sType)
+            myMediaPlayer?.seekTo(lastTime*1000)
+        }
+
+        // sets the loop value from last session
+        if (loop.isNotEmpty()) {
+            val sType = object : TypeToken<Boolean>() {}.type
+            val saveLoop = gson.fromJson<Boolean>(loop, sType)
+
+            // if false will loop the full playlist
+            loopstate = saveLoop
+            if (loopstate == true) {
+                ROOT.repeatbutton.setImageResource(R.drawable.ic_repeat_black_24dp)
+            }
+            else {
+                // else stops after song is done
+                ROOT.repeatbutton.setImageResource(R.drawable.ic_repeat_one_black_24dp)
+            }
+        }
+
+        // sets the shuffle value from last session
+        if (shuffle.isNotEmpty()) {
+            val sType = object : TypeToken<Boolean>() {}.type
+            val saveShuffle = gson.fromJson<Boolean>(shuffle, sType)
+
+            // if true plays random song in playlist
+            shufflestate = saveShuffle
+            if (shufflestate == true) {
+                ROOT.shufflebutton.setImageResource(R.drawable.ic_shuffle_black_24dp)
+            }
+            else {
+                // if false plays the next song in order
+                ROOT.shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
+            }
+        }
+
+    }
+
+    // plays the music
+    fun playMusic() {
+        myMediaPlayer?.start()
+        // sets the seekbar and changes the time based on what media is playing
+        totalTime = myMediaPlayer?.duration ?: 0
+        view?.totalTime?.text  = createTimeLabel(totalTime)
+        view?.playbar?.max = totalTime/1000
+        view?.playbar?.progress = 0
+        // tells the seekbar to change with the music
+        track = true
+        // tells the app it is currently playing a song
+        playstate = true
+        // displays current song title
+        view?.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
     }
 
 }

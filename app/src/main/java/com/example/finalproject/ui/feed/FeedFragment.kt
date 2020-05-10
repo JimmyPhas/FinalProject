@@ -33,8 +33,6 @@ class FeedFragment : Fragment() {
     private val BASE_URL = "https://api.vagalume.com.br/"
     private val API = "1c9031fbe39d0b7a91d27ca877881edc"
 
-
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -44,11 +42,13 @@ class FeedFragment : Fragment() {
             ViewModelProviders.of(this).get(FeedViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_feed, container, false)
 
+        // listener for the search button
         root.lyricssearch.setOnClickListener {
             val retrofit = Retrofit.Builder().baseUrl(BASE_URL).addConverterFactory(GsonConverterFactory.create()).build()
             val lyricSearchAPI = retrofit.create(LyricsService::class.java)
 
 
+            // checks inputs for empty values
             if (songname.text.toString().isNullOrBlank()) {
                 Toast.makeText(this.context, "Please enter a song title.", Toast.LENGTH_LONG).show()
             }
@@ -59,6 +59,7 @@ class FeedFragment : Fragment() {
                 Toast.makeText(this.context, "Please enter a song title and artist.", Toast.LENGTH_LONG).show()
             }
             else {
+                // if inputs song title and an artist search api
                 val songtitle = songname.text.toString()
                 val artistname = artistname.text.toString()
 
@@ -70,12 +71,14 @@ class FeedFragment : Fragment() {
                     override fun onResponse(call: Call<LyricData>, response: Response<LyricData>) {
                         val body = response.body()
 
+                        // if there are no song lyrics in the api tells the user
                         if (body?.mus == null) {
                             Toast.makeText(context, "Unable to retrieve $songtitle.", Toast.LENGTH_LONG).show()
                             Log.d("Lyrics", "Valid response not received")
                             return
                         }
                         else {
+                            // if there are song lyrics display them
                             lyrics.text = body.mus[0].text
                             lyrics.setMovementMethod(ScrollingMovementMethod());
                         }

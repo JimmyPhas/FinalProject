@@ -25,12 +25,8 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
     var count = 0
     private val Media_Player = "MediaPlayer"
     private val TAG = "MyRecyclerAdapter"
-    private val bundle = Bundle()
-//    internal var dbHelper = SongDBHelper(context)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
-
-//        Log.d(TAG, "onCreateViewHolder: ${count++}")
 
         // create a new view
         val view = LayoutInflater.from(parent.context).inflate(R.layout.row_song, parent, false)
@@ -45,8 +41,6 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
         holder.artist.text = currentItem.artistName
         holder.length.text = currentItem.totalLength
 
-
-//        Log.d(TAG, "onBindViewHolder: $position")
     }
 
     override fun getItemCount(): Int {
@@ -64,14 +58,16 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
         val artist = itemView.artist
         val length = itemView.song_length
 
-        // Set onClickListener to show a toast message for the selected row item in the list
+        // Set onClickListener
         init {
+            // if clicks on an item switch to playing fragment and play it immediately
             itemView.setOnClickListener {
                 val selectedItem = adapterPosition
 
                 val sharedPreferences = activity!!.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
                 val editor = sharedPreferences?.edit()
 
+                // saves index to shared preferences
                 if (editor != null) {
                     editor.putString("LastSong", selectedItem.toString())
                 }
@@ -79,28 +75,17 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
                     editor.putString("LastTime", 0.toString())
                 }
                 if (editor != null) {
+                    // this tells playing fragment that user clicked on an item in the song fragment
                     editor.putString("SongClick", "true")
                 }
                 if (editor != null) {
                     editor.apply()
                 }
 
-//                dbHelper.close()
+                // uses navigation to switch to playing fragment
                 Navigation.findNavController(activity!!, R.id.nav_host_fragment).navigate(R.id.navigation_playing);
 
             }
-
-            // Set onLongClickListener to show a toast message and remove the selected row item from the list
-//            itemView.setOnLongClickListener {
-//
-//                val selectedItem = adapterPosition
-//                songs.removeAt(selectedItem)
-//                notifyItemRemoved(selectedItem)
-//                Toast.makeText(itemView.context, "Long press, deleting $selectedItem",
-//                    Toast.LENGTH_SHORT).show()
-//
-//                return@setOnLongClickListener true
-//            }
 
         }
 
