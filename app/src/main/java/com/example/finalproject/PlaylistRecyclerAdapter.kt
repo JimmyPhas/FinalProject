@@ -1,18 +1,24 @@
 package com.example.finalproject
 
+import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
+import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.row_playlist.view.*
 
 
 
-class PlaylistRecyclerAdapter(private val playlists: ArrayList<Playlist>) : RecyclerView.Adapter<PlaylistRecyclerAdapter.MyViewHolder>() {
+class PlaylistRecyclerAdapter(private val playlists: ArrayList<Playlist>,  private val activity: FragmentActivity?) : RecyclerView.Adapter<PlaylistRecyclerAdapter.MyViewHolder>() {
 
     var count = 0
+    private val Media_Player = "MediaPlayer"
     private val TAG = "MyRecyclerAdapter"
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -50,21 +56,56 @@ class PlaylistRecyclerAdapter(private val playlists: ArrayList<Playlist>) : Recy
         init {
             itemView.setOnClickListener{
                 val selectedItem = adapterPosition
-                Toast.makeText(itemView.context, "You clicked on $selectedItem",
-                    Toast.LENGTH_SHORT).show()
+
+                val sharedPreferences = activity!!.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
+                val editor = sharedPreferences?.edit()
+                val gson = Gson()
+
+                val allPlaylists = sharedPreferences?.getString("AllPlaylists", "")?:""
+                val allplaylists = mutableListOf<Playlist>()
+                if (allPlaylists.isNotEmpty()) {
+                    val sType = object : TypeToken<List<Playlist>>() {}.type
+                    val allPlaylist = gson.fromJson<List<Playlist>>(allPlaylists, sType)
+
+                    for (P in allPlaylist) {
+                        allplaylists.add(P)
+                    }
+                }
+
+                val clicked = gson.toJson(allplaylists[selectedItem].songs)
+                // saves index to shared preferences
+                if (editor != null) {
+                    editor.putString("LastSong", 0.toString())
+                }
+                if (editor != null) {
+                    editor.putString("LastTime", 0.toString())
+                }
+                if (editor != null) {
+                    editor.putString("LastPlaylist", clicked)
+                }
+                if (editor != null) {
+                    // this tells playing fragment that user clicked on an item in the song fragment
+                    editor.putString("PlaylistClick", "true")
+                }
+                if (editor != null) {
+                    editor.apply()
+                }
+
+                // uses navigation to switch to playing fragment
+                Navigation.findNavController(activity!!, R.id.nav_host_fragment).navigate(R.id.navigation_playing);
             }
 
-            // Set onLongClickListener to show a toast message and remove the selected row item from the list
-            itemView.setOnLongClickListener {
-
-                val selectedItem = adapterPosition
-                playlists.removeAt(selectedItem)
-                notifyItemRemoved(selectedItem)
-                Toast.makeText(itemView.context, "Long press, deleting $selectedItem",
-                    Toast.LENGTH_SHORT).show()
-
-                return@setOnLongClickListener true
-            }
+//            // Set onLongClickListener to show a toast message and remove the selected row item from the list
+//            itemView.setOnLongClickListener {
+//
+//                val selectedItem = adapterPosition
+//                playlists.removeAt(selectedItem)
+//                notifyItemRemoved(selectedItem)
+//                Toast.makeText(itemView.context, "Long press, deleting $selectedItem",
+//                    Toast.LENGTH_SHORT).show()
+//
+//                return@setOnLongClickListener true
+//            }
 
         }
 

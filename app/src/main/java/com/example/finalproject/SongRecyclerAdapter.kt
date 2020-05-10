@@ -15,12 +15,13 @@ import com.example.finalproject.ui.playing.PlayingFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.internal.ContextUtils.getActivity
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.fragment_playing.view.*
 import kotlinx.android.synthetic.main.row_song.view.*
 import java.lang.Exception
 
 
-class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?, context: Context) : RecyclerView.Adapter<SongRecyclerAdapter.MyViewHolder>() {
+class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?) : RecyclerView.Adapter<SongRecyclerAdapter.MyViewHolder>() {
 
     var count = 0
     private val Media_Player = "MediaPlayer"
@@ -66,6 +67,19 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
 
                 val sharedPreferences = activity!!.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
                 val editor = sharedPreferences?.edit()
+                val gson = Gson()
+
+                val allsongs = sharedPreferences?.getString("AllSongs", "")?:""
+                val AllSongs = mutableListOf<Song>()
+                if (allsongs.isNotEmpty()) {
+                    val sType = object : TypeToken<List<Song>>() {}.type
+                    val All = gson.fromJson<List<Song>>(allsongs, sType)
+
+                    for (S in All) {
+                        AllSongs.add(S)
+                    }
+                }
+                val saveAllSongs = gson.toJson(AllSongs)
 
                 // saves index to shared preferences
                 if (editor != null) {
@@ -73,6 +87,9 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
                 }
                 if (editor != null) {
                     editor.putString("LastTime", 0.toString())
+                }
+                if (editor != null) {
+                    editor.putString("LastPlaylist", saveAllSongs)
                 }
                 if (editor != null) {
                     // this tells playing fragment that user clicked on an item in the song fragment

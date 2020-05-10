@@ -228,13 +228,13 @@ class PlayingFragment : Fragment() {
     // used when user clicks a song from the song fragment
     override fun onStart() {
         super.onStart()
-
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val editor = sharedPreferences?.edit()
         val gson = Gson()
 
         // if the user click on an item from the song fragment retrieve the index and play
         val fromSong = sharedPreferences?.getString("SongClick", "")?:""
+        val fromPlaylist = sharedPreferences?.getString("PlaylistClick", "")?:""
         if (fromSong.isNotEmpty()) {
             val sType = object : TypeToken<String>() {}.type
             val fromsong = gson.fromJson<String>(fromSong, sType)
@@ -244,6 +244,21 @@ class PlayingFragment : Fragment() {
                 playMusic()
                 if (editor != null) {
                     editor.putString("SongClick", "false")
+                }
+                if (editor != null) {
+                    editor.apply()
+                }
+            }
+        }
+        if (fromPlaylist.isNotEmpty()) {
+            val sType = object : TypeToken<String>() {}.type
+            val fromplaylist = gson.fromJson<String>(fromPlaylist, sType)
+            // plays song automatically when fragment switches from song to playing
+            if (fromplaylist == "true") {
+                playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
+                playMusic()
+                if (editor != null) {
+                    editor.putString("PlaylistClick", "false")
                 }
                 if (editor != null) {
                     editor.apply()

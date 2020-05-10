@@ -40,6 +40,7 @@ class PlaylistsFragment : Fragment() {
         val allPlaylists = sharedPreferences?.getString("AllPlaylists", "")?:""
         val gson = Gson()
 
+
         if (allPlaylists.isNotEmpty()) {
             val sType = object : TypeToken<List<Playlist>>() {}.type
             val allPlaylist = gson.fromJson<List<Playlist>>(allPlaylists, sType)
@@ -49,7 +50,7 @@ class PlaylistsFragment : Fragment() {
             }
         }
 
-        recycler_playlists.adapter = PlaylistRecyclerAdapter(allplaylists as ArrayList<Playlist>)
+        recycler_playlists.adapter = PlaylistRecyclerAdapter(allplaylists as ArrayList<Playlist>, this.activity)
         recycler_playlists.layoutManager = LinearLayoutManager(this.context)
     }
 
