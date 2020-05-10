@@ -4,6 +4,7 @@
     <string name="title_songs">Songs</string>
     <string name="title_playlists">Playlists</string>
     <string name="title_feed">Feed</string>
+    <string name="title_createplaylist">Create Playlist</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

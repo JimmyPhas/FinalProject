@@ -54,11 +54,6 @@ class PlayingFragment : Fragment() {
                 ViewModelProviders.of(this).get(PlayingViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_playing, container, false)
 
-        // remembers lest values of last session
-        val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
-        val editor = sharedPreferences?.edit()
-        val gson = Gson()
-
         getSharedPrefs(root)
 
         // listener of the play button

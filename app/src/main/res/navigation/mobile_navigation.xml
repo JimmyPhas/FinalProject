@@ -28,4 +28,10 @@
         android:name="com.example.finalproject.ui.feed.FeedFragment"
         android:label="@string/title_feed"
         tools:layout="@layout/fragment_feed" />
+
+    <fragment
+        android:id="@+id/navigation_create_playlist"
+        android:name="com.example.finalproject.ui.playlists.PlaylistAdd"
+        android:label="@string/title_createplaylist"
+        tools:layout="@layout/fragment_playlist_add" />
 </navigation>

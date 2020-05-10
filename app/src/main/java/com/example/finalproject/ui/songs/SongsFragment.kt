@@ -1,22 +1,10 @@
 package com.example.finalproject.ui.songs
 
-import android.Manifest
-import android.app.Activity
-import android.content.ContentResolver
 import android.content.Context
-import android.content.pm.PackageManager
-import android.database.Cursor
-import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.PermissionChecker.checkSelfPermission
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,9 +12,6 @@ import com.example.finalproject.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.fragment_songs.*
-import java.lang.Exception
-import androidx.appcompat.app.AlertDialog
-import androidx.room.Room
 
 
 class SongsFragment : Fragment() {
@@ -41,8 +26,7 @@ class SongsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        songsViewModel =
-            ViewModelProviders.of(this).get(SongsViewModel::class.java)
+        songsViewModel = ViewModelProviders.of(this).get(SongsViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_songs, container, false)
 
         return root
@@ -51,8 +35,7 @@ class SongsFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        val sharedPreferences =
-            this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
+        val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val gson = Gson()
         val editor = sharedPreferences?.edit()
 

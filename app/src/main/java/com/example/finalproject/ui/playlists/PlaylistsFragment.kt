@@ -7,13 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.finalproject.*
-import com.example.finalproject.ui.playing.PlayingFragment
-import com.example.finalproject.ui.songs.SongsFragment
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.fragment_playlists.*
+import kotlinx.android.synthetic.main.fragment_playlists.view.*
 
 class PlaylistsFragment : Fragment() {
 
@@ -30,6 +30,12 @@ class PlaylistsFragment : Fragment() {
         playlistsViewModel =
                 ViewModelProviders.of(this).get(PlaylistsViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_playlists, container, false)
+
+        root.addButton.setOnClickListener {
+
+            this.activity?.let { it1 -> Navigation.findNavController(it1, R.id.nav_host_fragment).navigate(R.id.navigation_create_playlist) };
+        }
+
         return root
     }
 

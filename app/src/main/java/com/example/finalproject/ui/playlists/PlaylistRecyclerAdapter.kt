@@ -1,27 +1,21 @@
-package com.example.finalproject
+package com.example.finalproject.ui.playlists
 
 import android.content.Context
-import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.Navigation
-import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import com.example.finalproject.ui.playing.PlayingFragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.internal.ContextUtils.getActivity
+import com.example.finalproject.Playlist
+import com.example.finalproject.R
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.android.synthetic.main.fragment_playing.view.*
-import kotlinx.android.synthetic.main.row_song.view.*
-import java.lang.Exception
+import kotlinx.android.synthetic.main.row_playlist.view.*
 
 
-class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?) : RecyclerView.Adapter<SongRecyclerAdapter.MyViewHolder>() {
+
+class PlaylistRecyclerAdapter(private val playlists: ArrayList<Playlist>, private val activity: FragmentActivity?) : RecyclerView.Adapter<PlaylistRecyclerAdapter.MyViewHolder>() {
 
     var count = 0
     private val Media_Player = "MediaPlayer"
@@ -29,24 +23,25 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
 
+//        Log.d(TAG, "onCreateViewHolder: ${count++}")
+
         // create a new view
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.row_song, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.row_playlist, parent, false)
         return MyViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        val currentItem = songs[position]
-        holder.name.text = currentItem.songName
-        holder.artist.text = currentItem.artistName
-        holder.length.text = currentItem.totalLength
+        val currentItem = playlists[position]
+        holder.name.text = currentItem.playlistName
 
+//        Log.d(TAG, "onBindViewHolder: $position")
     }
 
     override fun getItemCount(): Int {
         // Return the size of your dataset (invoked by the layout manager)
-        return songs.size
+        return playlists.size
     }
 
     // Provide a reference to the views for each data item
@@ -55,54 +50,64 @@ class SongRecyclerAdapter(private val songs: ArrayList<Song>, private val activi
     inner class MyViewHolder (itemView: View): RecyclerView.ViewHolder (itemView){
         // This class will represent a single row in our recyclerView list
         // This class also allows caching views and reuse them
-        val name = itemView.song_name
-        val artist = itemView.artist
-        val length = itemView.song_length
+        val name = itemView.playlist_name
 
-        // Set onClickListener
+        // Set onClickListener to show a toast message for the selected row item in the list
         init {
-            // if clicks on an item switch to playing fragment and play it immediately
-            itemView.setOnClickListener {
+            itemView.setOnClickListener{
                 val selectedItem = adapterPosition
 
                 val sharedPreferences = activity!!.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
                 val editor = sharedPreferences?.edit()
                 val gson = Gson()
 
-                val allsongs = sharedPreferences?.getString("AllSongs", "")?:""
-                val AllSongs = mutableListOf<Song>()
-                if (allsongs.isNotEmpty()) {
-                    val sType = object : TypeToken<List<Song>>() {}.type
-                    val All = gson.fromJson<List<Song>>(allsongs, sType)
+                val allPlaylists = sharedPreferences?.getString("AllPlaylists", "")?:""
+                val allplaylists = mutableListOf<Playlist>()
+                if (allPlaylists.isNotEmpty()) {
+                    val sType = object : TypeToken<List<Playlist>>() {}.type
+                    val allPlaylist = gson.fromJson<List<Playlist>>(allPlaylists, sType)
 
-                    for (S in All) {
-                        AllSongs.add(S)
+                    for (P in allPlaylist) {
+                        allplaylists.add(P)
                     }
                 }
-                val saveAllSongs = gson.toJson(AllSongs)
 
+                val clicked = gson.toJson(allplaylists[selectedItem].songs)
                 // saves index to shared preferences
                 if (editor != null) {
-                    editor.putString("LastSong", selectedItem.toString())
+                    editor.putString("LastSong", 0.toString())
                 }
                 if (editor != null) {
                     editor.putString("LastTime", 0.toString())
                 }
                 if (editor != null) {
-                    editor.putString("LastPlaylist", saveAllSongs)
+                    editor.putString("LastPlaylist", clicked)
                 }
                 if (editor != null) {
                     // this tells playing fragment that user clicked on an item in the song fragment
-                    editor.putString("SongClick", "true")
+                    editor.putString("PlaylistClick", "true")
                 }
                 if (editor != null) {
                     editor.apply()
                 }
 
                 // uses navigation to switch to playing fragment
-                Navigation.findNavController(activity!!, R.id.nav_host_fragment).navigate(R.id.navigation_playing);
-
+                Navigation.findNavController(activity!!,
+                    R.id.nav_host_fragment
+                ).navigate(R.id.navigation_playing);
             }
+
+//            // Set onLongClickListener to show a toast message and remove the selected row item from the list
+//            itemView.setOnLongClickListener {
+//
+//                val selectedItem = adapterPosition
+//                playlists.removeAt(selectedItem)
+//                notifyItemRemoved(selectedItem)
+//                Toast.makeText(itemView.context, "Long press, deleting $selectedItem",
+//                    Toast.LENGTH_SHORT).show()
+//
+//                return@setOnLongClickListener true
+//            }
 
         }
 
