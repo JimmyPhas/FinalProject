@@ -1,5 +1,6 @@
 package com.example.finalproject.ui.playing
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
@@ -13,6 +14,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.room.Room
 import com.example.finalproject.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -33,19 +35,17 @@ class PlayingFragment : Fragment() {
     private var track: Boolean = false
     private var nowPlaying: Int = 0
     private var lastPlaylist = mutableListOf<Song>()
-//    private var allSongTitles = mutableListOf<Song>()
     private var trackIndex: Int = 0
     private var prevSongs = mutableListOf<Int>()
     private var stackCurser: Int = 0
-    private val lastSession = mutableListOf<LastSession>()
-    internal var dbHelper = this.context?.let { SongDBHelper(it) }
-
     private val Media_Player = "MediaPlayer"
 
 
     private lateinit var playingViewModel: PlayingViewModel
+    lateinit var db :MusicRoomDatabse
 
 
+//    @SuppressLint("UseRequireInsteadOfGet")
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -61,32 +61,38 @@ class PlayingFragment : Fragment() {
         val currentPlaylist = sharedPreferences?.getString("LastPlaylist", "")?:""
         val currentSong = sharedPreferences?.getString("LastSong", "")?:""
         val currentTime = sharedPreferences?.getString("LastTime", "")?:""
-//        val allSongs = sharedPreferences?.getString("AllSongs", "")?:""
         val loop = sharedPreferences?.getString("Loop", "")?:""
         val shuffle = sharedPreferences?.getString("Shuffle", "")?:""
         val gson = Gson()
 
         val myIntent = Intent(getActivity(), MyService::class.java)
+        db = context?.applicationContext?.let { Room.databaseBuilder(it, MusicRoomDatabse::class.java, "music.db").build() }!!
 
-        try {
-            val cursor1 = dbHelper?.viewLastSession
-            if (cursor1 != null) {
-                while (cursor1.moveToNext()) {
-                    lastSession.add(
-                        LastSession(
-                            cursor1.getInt(1),
-                            cursor1.getInt(2),
-                            cursor1.getString(3),
-                            cursor1.getInt(4),
-                            cursor1.getInt(5),
-                            cursor1.getInt(6)
-                        )
-                    )
-                }
+
+        Thread {
+            val SONGS = db.musicDAO().viewAllSongs()
+            Log.d("JEWWWWWWWWSSSSSSSSSS", "is it even goin iun this?")
+            for (S in SONGS) {
+                Log.d("WORRRRRRKKKKK", "stuff: ${S}")
+                lastPlaylist.add((Song(S.songName, S.artistName, S.totalLength, S.uriID)))
+
             }
-        } catch (e: Exception){
-            Log.e("SONGRECYCLER", "error: $e")
-        }
+            Log.d("FUCKKKKKKKKKK", "stuff: ${lastPlaylist}")
+        }.start()
+
+
+
+
+
+//        if (currentPlaylist.isNotEmpty()) {
+//            val sType = object : TypeToken<List<Song>>() {}.type
+//            val savedPlaylist = gson.fromJson<List<Song>>(currentPlaylist, sType)
+//
+//            for (S in savedPlaylist) {
+//                lastPlaylist.add(S)
+//            }
+//
+//        }
 
         // sets the settings and last session values
         if (loop.isNotEmpty()) {
@@ -112,26 +118,6 @@ class PlayingFragment : Fragment() {
             }
             else {
                 root.shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
-            }
-        }
-
-        // array of all songs, used to keep playing or select next or previous song
-//        if (allSongs.isNotEmpty()) {
-//            val sType = object : TypeToken<List<Song>>() {}.type
-//            val savedSongList = gson.fromJson<List<Song>>(allSongs, sType)
-//
-//            for (S in savedSongList) {
-//                allSongTitles.add(S)
-//            }
-//        }
-
-        // this array holds the resId values so that i can properly set myMusicPlayer
-        if (currentPlaylist.isNotEmpty()) {
-            val sType = object : TypeToken<List<Song>>() {}.type
-            val savedPlaylist = gson.fromJson<List<Song>>(currentPlaylist, sType)
-
-            for (S in savedPlaylist) {
-                lastPlaylist.add(S)
             }
         }
 
