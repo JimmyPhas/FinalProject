@@ -75,7 +75,7 @@ class MyService : Service() {
                             playNextSong()
                         }
                     }
-                    Thread.sleep(500)
+//                    Thread.sleep(500)
                 }
             }
             else {
