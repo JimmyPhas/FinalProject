@@ -36,8 +36,8 @@ class SongsFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
 
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
-        val gson = Gson()
         val editor = sharedPreferences?.edit()
+        val gson = Gson()
 
         val allSongs = sharedPreferences?.getString("AllSongs", "") ?: ""
 

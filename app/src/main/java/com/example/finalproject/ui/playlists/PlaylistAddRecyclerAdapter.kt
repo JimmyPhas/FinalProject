@@ -1,10 +1,13 @@
 package com.example.finalproject.ui.playlists
 
-import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import androidx.recyclerview.selection.ItemDetailsLookup
+import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.RecyclerView
 import com.example.finalproject.R
 import com.example.finalproject.Song
@@ -16,11 +19,15 @@ class PlaylistAddRecyclerAdapter(private val songs: ArrayList<Song>, private val
     var count = 0
     private val Media_Player = "MediaPlayer"
     private val TAG = "MyRecyclerAdapter"
+    val newPlaylist = mutableListOf<Song>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
 
         // create a new view
         val view = LayoutInflater.from(parent.context).inflate(R.layout.row_song, parent, false)
+        for (S in songs) {
+            newPlaylist.add(S)
+        }
         return MyViewHolder(view)
     }
 
@@ -49,7 +56,6 @@ class PlaylistAddRecyclerAdapter(private val songs: ArrayList<Song>, private val
         val artist = itemView.artist
         val length = itemView.song_length
 
-
         // Set onClickListener to show a toast message for the selected row item in the list
         init {
             itemView.setOnClickListener{
@@ -57,17 +63,15 @@ class PlaylistAddRecyclerAdapter(private val songs: ArrayList<Song>, private val
 
             }
 
-//            // Set onLongClickListener to show a toast message and remove the selected row item from the list
-//            itemView.setOnLongClickListener {
-//
-//                val selectedItem = adapterPosition
-//                playlists.removeAt(selectedItem)
-//                notifyItemRemoved(selectedItem)
-//                Toast.makeText(itemView.context, "Long press, deleting $selectedItem",
-//                    Toast.LENGTH_SHORT).show()
-//
-//                return@setOnLongClickListener true
-//            }
+            // Set onLongClickListener to show a toast message and remove the selected row item from the list
+            itemView.setOnLongClickListener {
+
+                val selectedItem = adapterPosition
+                newPlaylist.removeAt(selectedItem)
+                notifyItemRemoved(selectedItem)
+
+                return@setOnLongClickListener true
+            }
 
         }
 
