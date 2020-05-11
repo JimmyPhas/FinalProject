@@ -1,24 +1,19 @@
 package com.example.finalproject.ui.feed
 
-import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.example.finalproject.LyricData
-import com.example.finalproject.LyricsService
 import com.example.finalproject.R
 import kotlinx.android.synthetic.main.fragment_feed.*
 import kotlinx.android.synthetic.main.fragment_feed.view.*
-import kotlinx.android.synthetic.main.fragment_feed.view.songname
 import android.text.method.ScrollingMovementMethod;
 import retrofit2.Call
 import retrofit2.Callback

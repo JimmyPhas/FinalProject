@@ -1,8 +1,10 @@
 package com.example.finalproject
 
 import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
@@ -42,6 +44,12 @@ class MainActivity : AppCompatActivity() {
         
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val myIntent = Intent(this, MyService::class.java)
+        stopService(myIntent)
     }
 
 

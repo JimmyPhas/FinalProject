@@ -1,25 +1,17 @@
 package com.example.finalproject.ui.playlists
 
 import android.content.Context
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
-import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
-import com.example.finalproject.Playlist
 import com.example.finalproject.R
 import com.example.finalproject.Song
-import com.example.finalproject.ui.songs.SongRecyclerAdapter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import kotlinx.android.synthetic.main.row_playlist.view.*
 import kotlinx.android.synthetic.main.row_song.view.*
 
 
-class AddPlaylistRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?) : RecyclerView.Adapter<AddPlaylistRecyclerAdapter.MyViewHolder>() {
+class PlaylistAddRecyclerAdapter(private val songs: ArrayList<Song>, private val activity: FragmentActivity?) : RecyclerView.Adapter<PlaylistAddRecyclerAdapter.MyViewHolder>() {
 
     var count = 0
     private val Media_Player = "MediaPlayer"
@@ -35,10 +27,6 @@ class AddPlaylistRecyclerAdapter(private val songs: ArrayList<Song>, private val
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        if(position==position)
-            holder.itemView.setBackgroundColor(Color.parseColor("#000000"));
-        else
-            holder.itemView.setBackgroundColor(Color.parseColor("#ffffff"));
         val currentItem = songs[position]
         holder.name.text = currentItem.songName
         holder.artist.text = currentItem.artistName
@@ -65,9 +53,7 @@ class AddPlaylistRecyclerAdapter(private val songs: ArrayList<Song>, private val
         // Set onClickListener to show a toast message for the selected row item in the list
         init {
             itemView.setOnClickListener{
-                val selectedItem = adapterPosition
 
-                Toast.makeText(itemView.context, "Long press, deleting $selectedItem", Toast.LENGTH_SHORT).show()
 
             }
 

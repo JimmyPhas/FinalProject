@@ -1,11 +1,13 @@
 package com.example.finalproject.ui.playing
 
 import android.annotation.SuppressLint
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
+import android.telephony.ServiceState
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -25,7 +27,6 @@ import java.lang.Exception
 
 class PlayingFragment : Fragment() {
 
-//    private lateinit var mp: MediaPlayer
     private var myMediaPlayer : MediaPlayer? = null
     private var totalTime: Int = 0
     private var playstate: Boolean = false
@@ -39,12 +40,18 @@ class PlayingFragment : Fragment() {
     private var prevSongs = mutableListOf<Int>()
     private var stackCurser: Int = 0
     private val Media_Player = "MediaPlayer"
+    private lateinit var fragView: View
 
 
     private lateinit var playingViewModel: PlayingViewModel
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        val myIntent = Intent(this.context, MyService::class.java)
+        getActivity()?.stopService(myIntent)
+    }
 
-//    @SuppressLint("UseRequireInsteadOfGet")
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -53,8 +60,9 @@ class PlayingFragment : Fragment() {
         playingViewModel =
                 ViewModelProviders.of(this).get(PlayingViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_playing, container, false)
+        fragView = root
 
-        getSharedPrefs(root)
+        getSharedPrefs()
 
         // listener of the play button
         root.playbutton.setOnClickListener {
@@ -110,7 +118,6 @@ class PlayingFragment : Fragment() {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     myMediaPlayer?.seekTo(progress * 1000)
-                    val pos = myMediaPlayer!!.getCurrentPosition()/1000
                 }
             }
 
@@ -223,26 +230,30 @@ class PlayingFragment : Fragment() {
     // used when user clicks a song from the song fragment
     override fun onStart() {
         super.onStart()
+        val myIntent = Intent(this.context, MyService::class.java)
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val editor = sharedPreferences?.edit()
         val gson = Gson()
+        var playmusic = false
 
         // if the user click on an item from the song fragment retrieve the index and play
         val fromSong = sharedPreferences?.getString("SongClick", "")?:""
         val fromPlaylist = sharedPreferences?.getString("PlaylistClick", "")?:""
+        val servicestate = sharedPreferences?.getString("serviceState", "")?:""
+
         if (fromSong.isNotEmpty()) {
             val sType = object : TypeToken<String>() {}.type
             val fromsong = gson.fromJson<String>(fromSong, sType)
             // plays song automatically when fragment switches from song to playing
             if (fromsong == "true") {
                 playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
-                playMusic()
                 if (editor != null) {
                     editor.putString("SongClick", "false")
                 }
                 if (editor != null) {
                     editor.apply()
                 }
+                playmusic = true
             }
         }
         if (fromPlaylist.isNotEmpty()) {
@@ -251,15 +262,37 @@ class PlayingFragment : Fragment() {
             // plays song automatically when fragment switches from song to playing
             if (fromplaylist == "true") {
                 playbutton.setImageResource(R.drawable.ic_pause_black_24dp)
-                playMusic()
                 if (editor != null) {
                     editor.putString("PlaylistClick", "false")
                 }
                 if (editor != null) {
                     editor.apply()
                 }
+                playmusic = true
             }
         }
+
+        if (servicestate.isNotEmpty()) {
+            val sType = object : TypeToken<String>() {}.type
+            val state = gson.fromJson<String>(servicestate, sType)
+
+            if (state == "true") {
+                getActivity()?.stopService(myIntent)
+                if (editor != null) {
+                    editor.putString("serviceState", "false")
+                }
+                if (editor != null) {
+                    editor.apply()
+                }
+                getSharedPrefs()
+                playmusic = true
+            }
+        }
+
+        if (playmusic == true) {
+            playMusic()
+        }
+
     }
 
     // pushed and pops songs from the stack to use for previous button
@@ -277,18 +310,10 @@ class PlayingFragment : Fragment() {
         }
     }
 
-    // stops tracking and changes playstate
-    override fun onStop() {
-        super.onStop()
-        track = false
-        playstate = false
-    }
-
     override fun onPause() {
         super.onPause()
         // stops tracking for seekbar
         track = false
-//        val myIntent = Intent(getActivity(), MyService::class.java)
 
         // saves the state of the player before closing
         if (myMediaPlayer != null ) {
@@ -297,6 +322,7 @@ class PlayingFragment : Fragment() {
 
             val saveLastPlaylist = gson.toJson(lastPlaylist)
             val editor = sharedPreferences?.edit()
+            val pos = myMediaPlayer!!.getCurrentPosition()
 
             if (editor != null) {
                 editor.putString("Shuffle", shufflestate.toString())
@@ -307,8 +333,7 @@ class PlayingFragment : Fragment() {
             if (editor != null) {
                 editor.putString("LastSong", trackIndex.toString())
             }
-            if ((editor != null) && playstate == true) {
-                val pos = myMediaPlayer!!.getCurrentPosition()/1000
+            if (editor != null) {
                 editor.putString("LastTime", pos.toString())
             }
             if (editor != null) {
@@ -319,16 +344,15 @@ class PlayingFragment : Fragment() {
             }
 
             playbutton.setImageResource(R.drawable.ic_play_arrow_black_24dp)
-            playstate = false
-//            startBackgroundService()
-            myMediaPlayer?.release()
+            if (playstate == true) {
+                startBackgroundService(pos)
+            }
+            else {
+                playstate = false
+                myMediaPlayer?.release()
+            }
         }
     }
-
-//    override fun onResume() {
-//        super.onResume()
-//        track = true
-//    }
 
     // formats the text for the time
     fun createTimeLabel(time: Int): String {
@@ -375,15 +399,28 @@ class PlayingFragment : Fragment() {
         return timeLabel
     }
 
-//    fun startBackgroundService() {
-//        val myIntent = Intent(getActivity(), MyService::class.java)
-//        startService(myIntent)
-//        getActivity()?.startService(myIntent)
-//        myIntent.putExtra("song", nowPlaying)
-//
-//    }
+    fun startBackgroundService(time: Int) {
+        val myIntent = Intent(this.context, MyService::class.java)
+        val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
+        val editor = sharedPreferences?.edit()
 
-    fun getSharedPrefs(ROOT: View) {
+        if (editor != null) {
+            editor.putString("serviceState", "true")
+        }
+        if (editor != null) {
+            editor.apply()
+        }
+
+        myMediaPlayer?.release()
+        myIntent.putExtra("song", trackIndex)
+        myIntent.putExtra("time", time)
+        myIntent.putExtra("loop", loopstate)
+        myIntent.putExtra("shuffle", shufflestate)
+
+        getActivity()?.startService(myIntent)
+    }
+
+    fun getSharedPrefs() {
         // uses shared preferences to keep track of previous app settings
         val sharedPreferences = this.activity?.getSharedPreferences(Media_Player, Context.MODE_PRIVATE)
         val gson = Gson()
@@ -421,7 +458,7 @@ class PlayingFragment : Fragment() {
             }
             // sets the mediaplayer to the song
             myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            ROOT.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
+            fragView.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
         }
         else {
             val sType = object : TypeToken<List<Song>>() {}.type
@@ -434,14 +471,15 @@ class PlayingFragment : Fragment() {
             trackIndex = 0
             nowPlaying = lastPlaylist[trackIndex].uriValue
             myMediaPlayer = MediaPlayer.create(this.context, nowPlaying)
-            ROOT.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
+            fragView.songname?.text = lastPlaylist[trackIndex].songName + " - " + lastPlaylist[trackIndex].artistName
         }
 
         // gets the time that the last play session stopped
         if (currentTime.isNotEmpty()) {
             val sType = object : TypeToken<Int>() {}.type
             val lastTime = gson.fromJson<Int>(currentTime, sType)
-            myMediaPlayer?.seekTo(lastTime*1000)
+
+            myMediaPlayer?.seekTo(lastTime)
         }
 
         // sets the loop value from last session
@@ -452,11 +490,11 @@ class PlayingFragment : Fragment() {
             // if false will loop the full playlist
             loopstate = saveLoop
             if (loopstate == true) {
-                ROOT.repeatbutton.setImageResource(R.drawable.ic_repeat_black_24dp)
+                fragView.repeatbutton.setImageResource(R.drawable.ic_repeat_black_24dp)
             }
             else {
                 // else stops after song is done
-                ROOT.repeatbutton.setImageResource(R.drawable.ic_repeat_one_black_24dp)
+                fragView.repeatbutton.setImageResource(R.drawable.ic_repeat_one_black_24dp)
             }
         }
 
@@ -468,11 +506,11 @@ class PlayingFragment : Fragment() {
             // if true plays random song in playlist
             shufflestate = saveShuffle
             if (shufflestate == true) {
-                ROOT.shufflebutton.setImageResource(R.drawable.ic_shuffle_black_24dp)
+                fragView.shufflebutton.setImageResource(R.drawable.ic_shuffle_black_24dp)
             }
             else {
                 // if false plays the next song in order
-                ROOT.shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
+                fragView.shufflebutton.setImageResource(R.drawable.ic_trending_flat_black_24dp)
             }
         }
 
